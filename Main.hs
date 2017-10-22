@@ -1,3 +1,4 @@
+-- Main.hs, final code
 module Main where
  
 import Network.Socket
@@ -56,4 +57,4 @@ runConn (sock, _) chan msgNum = do
  
     killThread reader                      -- kill after the loop ends
     broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
-    hClose hdl     
+    hClose hdl                             -- close the handle
