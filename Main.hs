@@ -34,7 +34,19 @@ runConn (sock, _) chan msgNum = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
  
-	connectClient hdl chan msgNum
+    let p = do
+		hPutStrLn hdl "Enter Chatroom name(JOIN_CHATROOM: [chatroom name]):"
+		sName <- fmap init (hGetLine hdl)
+		hPutStrLn hdl "Enter Server IP(CLIENT_IP: [IP Address of client if UDP | 0 if TCP]):"
+		ip <- fmap init (hGetLine hdl)
+		hPutStrLn hdl "Enter Server Port Number(PORT: [port number of client if UDP | 0 if TCP]):"
+		port <- fmap init (hGetLine hdl)
+		hPutStrLn hdl "Enter Client Name(CLIENT_NAME: [string Handle to identifier client user]):"
+		cName <- fmap init (hGetLine hdl)
+		let roomRef = 1
+		let joinID = 1
+		broadcast (cName ++ ": " ++ sName)
+		hPutStrLn hdl ("JOINED_CHATROOM: " + sName + "\nSERVER_IP: " + ip + "\nPORT: " + port + "\nROOM_REF: " + roomRef + "\nJOIN_ID: " + joinID)
 		
     commLine <- dupChan chan
  
@@ -56,19 +68,18 @@ runConn (sock, _) chan msgNum = do
     broadcast ("<-- " ++ cName ++ " left.") -- make a final broadcast
     hClose hdl    
 	
-connectClient :: Handle ->  Chan Msg -> Int -> IO ()
-connectClient hdl chan msgNum = do
-	let broadcast msg = writeChan chan (msgNum, msg)
-	hPutStrLn hdl "Enter Chatroom name(JOIN_CHATROOM: [chatroom name]):"
-	sName <- fmap init (hGetLine hdl)
-	hPutStrLn hdl "Enter Server IP(CLIENT_IP: [IP Address of client if UDP | 0 if TCP]):"
-	ip <- fmap init (hGetLine hdl)
-	hPutStrLn hdl "Enter Server Port Number(PORT: [port number of client if UDP | 0 if TCP]):"
-	port <- fmap init (hGetLine hdl)
-	hPutStrLn hdl "Enter Client Name(CLIENT_NAME: [string Handle to identifier client user]):"
-	cName <- fmap init (hGetLine hdl)
-	let roomRef = 1
-	let joinID = 1
-	broadcast (cName ++ ": " ++ sName)
-	hPutStrLn hdl ("JOINED_CHATROOM: " + sName + "\nSERVER_IP: " + ip + "\nPORT: " + port + "\nROOM_REF: " + roomRef + "\nJOIN_ID: " + joinID)
-	return (cName)
+--connectClient :: Handle ->  Chan Msg -> Int -> IO ()
+--connectClient hdl chan msgNum = do
+	--let broadcast msg = writeChan chan (msgNum, msg)
+	--hPutStrLn hdl "Enter Chatroom name(JOIN_CHATROOM: [chatroom name]):"
+	--sName <- fmap init (hGetLine hdl)
+	--hPutStrLn hdl "Enter Server IP(CLIENT_IP: [IP Address of client if UDP | 0 if TCP]):"
+	--ip <- fmap init (hGetLine hdl)
+	--hPutStrLn hdl "Enter Server Port Number(PORT: [port number of client if UDP | 0 if TCP]):"
+	--port <- fmap init (hGetLine hdl)
+	--hPutStrLn hdl "Enter Client Name(CLIENT_NAME: [string Handle to identifier client user]):"
+	--cName <- fmap init (hGetLine hdl)
+	--let roomRef = 1
+	--let joinID = 1
+	--broadcast (cName ++ ": " ++ sName)
+	--hPutStrLn hdl ("JOINED_CHATROOM: " + sName + "\nSERVER_IP: " + ip + "\nPORT: " + port + "\nROOM_REF: " + roomRef + "\nJOIN_ID: " + joinID)
