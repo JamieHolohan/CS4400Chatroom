@@ -1,4 +1,4 @@
--- Main.hs, final code
+	-- Main.hs, final code
 module Main where
  
 import Network.Socket
@@ -34,11 +34,8 @@ runConn (sock, _) chan msgNum = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
  
-    hPutStrLn hdl "Hi, what's your name?"
-    name <- fmap init (hGetLine hdl)
-    broadcast ("--> " ++ name ++ " entered chat.")
-    hPutStrLn hdl ("Welcome, " ++ name ++ "!")
- 
+	connectClient hdl chan msgNum
+		
     commLine <- dupChan chan
  
     -- fork off a thread for reading from the duplicated channel
@@ -53,8 +50,25 @@ runConn (sock, _) chan msgNum = do
              -- If an exception is caught, send a message and break the loop
              "quit" -> hPutStrLn hdl "Bye!"
              -- else, continue looping.
-             _      -> broadcast (name ++ ": " ++ line) >> loop
+             _      -> broadcast (cName ++ ": " ++ line) >> loop
  
     killThread reader                      -- kill after the loop ends
-    broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
-    hClose hdl                             -- close the handle
+    broadcast ("<-- " ++ cName ++ " left.") -- make a final broadcast
+    hClose hdl    
+	
+connectClient :: Handle ->  Chan Msg -> Int -> IO ()
+connectClient hdl chan msgNum = do
+	let broadcast msg = writeChan chan (msgNum, msg)
+	hPutStrLn hdl "Enter Chatroom name(JOIN_CHATROOM: [chatroom name]):"
+	sName <- fmap init (hGetLine hdl)
+	hPutStrLn hdl "Enter Server IP(CLIENT_IP: [IP Address of client if UDP | 0 if TCP]):"
+	ip <- fmap init (hGetLine hdl)
+	hPutStrLn hdl "Enter Server Port Number(PORT: [port number of client if UDP | 0 if TCP]):"
+	port <- fmap init (hGetLine hdl)
+	hPutStrLn hdl "Enter Client Name(CLIENT_NAME: [string Handle to identifier client user]):"
+	cName <- fmap init (hGetLine hdl)
+	let roomRef = 1
+	let joinID = 1
+	broadcast (cName ++ ": " ++ sName)
+	hPutStrLn hdl ("JOINED_CHATROOM: " + sName + "\nSERVER_IP: " + ip + "\nPORT: " + port + "\nROOM_REF: " + roomRef + "\nJOIN_ID: " + joinID)
+	return (cName)
