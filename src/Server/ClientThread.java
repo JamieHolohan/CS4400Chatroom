@@ -18,12 +18,12 @@ public class ClientThread implements Runnable {
     private String portNumber;
     private InetAddress ip;
 
-    public ClientThread(ChatServer server, Socket socket){
+    public ClientThread(ChatServer server, Socket socket) throws IOException{
         this.server = server;
         this.socket = socket;
     }
 
-    private PrintWriter getWriter(){
+    public PrintWriter getWriter(){
         return clientOut;
     }
     
@@ -64,6 +64,7 @@ public class ClientThread implements Runnable {
         try{
             // setup
             this.clientOut = new PrintWriter(socket.getOutputStream(), false);
+            //clientOut.write("Enter Message: ");
             InputStream is = socket.getInputStream();
             InputStreamReader isr = new InputStreamReader(is);
             BufferedReader br = new BufferedReader(isr);
@@ -100,64 +101,80 @@ public class ClientThread implements Runnable {
 	 	
     	boolean lineCorrect = false;
     	pw.println("Enter First Line (JOIN_CHATROOM: [chatroom name]):");
+    	System.out.println("Enter First Line (JOIN_CHATROOM: [chatroom name]):");
 
     	while(!lineCorrect){
-    		this.setChatroomName(br.readLine());
+    		this.chatroomName = br.readLine();
     		if (chatroomName.regionMatches(0, initLine1, 0, 14)){
     			pw.println("Line Correct :)");
+    			System.out.println("Line Correct :)");
     			chatroomName = chatroomName.substring(15);
     			pw.println(chatroomName);
     			lineCorrect = true;
 			}else{
 				pw.println("Line Incorrect: " + chatroomName);
+				System.out.println("Line Incorrect: " + chatroomName);
 				pw.println("Enter First Line (JOIN_CHATROOM: [chatroom name]):");
+				System.out.println("Enter First Line (JOIN_CHATROOM: [chatroom name]):");
 			}
 		}
 		
     	lineCorrect = false;
     	pw.println("Enter Second Line (CLIENT_IP: 0):");
+    	System.out.println("Enter Second Line (CLIENT_IP: 0):");
 		
     	while(!lineCorrect){
     		this.setClientIP(br.readLine());//clientIP = br.readLine();
     		if (clientIP.regionMatches(0, initLine2, 0, 10)){
     			pw.println("Line Correct :)");
+    			System.out.println("Line Correct :)");
     			clientIP = clientIP.substring(11);
     			ip = InetAddress.getLocalHost();
     			pw.println(ip);
     			lineCorrect = true;
     		}else{
     			pw.println("Line Incorrect: " + clientIP);
-    			pw.println("Enter Second Line (CLIENT_IP: 0):");
+				System.out.println("Line Incorrect: " + clientIP);
+				pw.println("Enter Second Line (CLIENT_IP: 0):");
+				System.out.println("Enter Second Line (CLIENT_IP: 0):");
     		}
     	}
 		
     	lineCorrect = false;
     	pw.println("Enter Third Line (PORT: 0):");
+    	System.out.println("Enter Third Line (PORT: 0):");
 	
     	while(!lineCorrect){
     		this.setPortNum(br.readLine());//portNum = br.readLine();
     		if (portNumber.regionMatches(0, initLine3, 0, 5)){
     			pw.println("Line Correct :)");
+    			System.out.println("Line Correct :)");
     			portNumber = portNumber.substring(6);
     			lineCorrect = true;
     		}else{
     			pw.println("Line Incorrect: " + portNumber);
-    			pw.println("Enter Third Line (PORT: 0):");
+				System.out.println("Line Incorrect: " + portNumber);
+				pw.println("Enter Third Line (PORT: 0):");
+				System.out.println("Enter Third Line (PORT: 0):");
     		}
     	}
 		
     	lineCorrect = false;
     	pw.println("Enter Fourth Line ( CLIENT_NAME: [string Handle to identifier client user]:");
-		
+    	pw.println("Enter Fourth Line ( CLIENT_NAME: [string Handle to identifier client user]:");
+    	
     	while(!lineCorrect){
     		this.setClientName(br.readLine());//clientName = br.readLine();
     		if (clientName.regionMatches(0, initLine4, 0, 11)){
     			pw.println("Line Correct :)");
+    			System.out.println("Line Correct :)");
     			clientName = clientName.substring(12);
     			lineCorrect = true;
     		}else{
-    			pw.println("Line Incorrect: " + clientName);
-    			pw.println("Enter Fourth Line ( CLIENT_NAME: [string Handle to identifier client user]:");
+    			pw.println("Line Incorrect: " + portNumber);
+				System.out.println("Line Incorrect: " + portNumber);
+				pw.println("Enter Fourth Line (CLIENT_NAME: [string Handle to identifier client user]:");
+				System.out.println("Enter Fourth Line (CLIENT_NAME: [string Handle to identifier client user]:");
     		}
     	}
     }

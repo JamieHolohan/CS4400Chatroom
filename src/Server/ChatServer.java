@@ -29,10 +29,10 @@ public class ChatServer {
     private void startServer(){
         clients = new ArrayList<ClientThread>();
         ServerSocket serverSocket = null;
-        try {
+        try{
             serverSocket = new ServerSocket(serverPort);
             acceptClients(serverSocket);
-        } catch (IOException e){
+        }catch (IOException e){
             System.err.println("Could not listen on port: "+serverPort);
             System.exit(1);
         }
@@ -48,6 +48,7 @@ public class ChatServer {
                 ClientThread client = new ClientThread(this, socket);
                 Thread thread = new Thread(client);
                 thread.start();
+                //client.getWriter().write("Enter Message: ");
                 clients.add(client);
                 //getInitialMessage(client);
             } catch (IOException ex){
