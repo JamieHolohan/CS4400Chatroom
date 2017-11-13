@@ -51,7 +51,6 @@ public class ChatServer {
     }
 
     private void acceptClients(ServerSocket serverSocket){
-
         System.out.println("server starts port = " + serverSocket.getLocalSocketAddress());
         while(true){
             try{
