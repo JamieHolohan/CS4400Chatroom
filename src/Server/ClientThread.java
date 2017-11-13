@@ -73,12 +73,17 @@ public class ClientThread implements Runnable {
         }
     }
     
-    static String HELOtext = "HELO text";
-    static String killService = "KILL_SERVICE";
-    static String initLine1 = "JOIN_CHATROOM:";
-    static String initLine2 = "CLIENT_IP:";
-    static String initLine3 = "PORT:";
-    static String initLine4 = "CLIENT_NAME:";
+    private static String HELOtext = "HELO text";
+    private static String killService = "KILL_SERVICE";
+    private static String initLine1 = "JOIN_CHATROOM:";
+    private static String initLine2 = "CLIENT_IP:";
+    private static String initLine3 = "PORT:";
+    private static String initLine4 = "CLIENT_NAME:";
+    private static String finalLine1 = "LEAVE_CHATROOM:";
+    private static String msgLine1 = "CHAT:";
+    private static String msgLine2 = "JOIN_ID:";
+    private static String msgLine3 = "CLIENT_NAME:";
+    private static String msgLine4 = "MESSAGE:";
     
     //Retrieves first line of message and defines which type it is (Join, Leave, Chatroom)
     public void getMessage() throws IOException {
@@ -139,6 +144,12 @@ public class ClientThread implements Runnable {
     			break;
     		}
     		
+    		//If first line is "LEAVE_CHATROOM:" 
+    		if (this.input.regionMatches(0, finalLine1, 0, 14)){
+    			getFinalMessage();
+    			break;
+    		}
+    		
     		System.err.println("ERROR: Line is not recognised: \"" + this.input + "\"");
     	}
     }
@@ -196,7 +207,7 @@ public class ClientThread implements Runnable {
     				this.clientIP = Integer.parseInt(inputClientIPString);
     				break;
     			}catch (Exception e){ 
-    				System.err.println("ERROR: Couldn't parse int");
+    				System.err.println("ERROR: Couldn't parse int \"" + inputClientIPString + "\"");
     				this.input = this.br.readLine();
     			}
     		}else{
@@ -270,43 +281,9 @@ public class ClientThread implements Runnable {
 			}
 		}
     	
-    	//Prints join message to client
+    	//Prints join message to client and server
     	printJoinMessage();
-    	
-    	//Prints join message to other clients in server
-    	for(ClientThread thatClient : server.getClients()){
-    		PrintWriter thatClientOut = thatClient.getWriter();
-    		if(thatClientOut != null && thatClient.roomRef == this.roomRef){
-    			thatClientOut.println(this.clientName + " has joined chatroom " + this.chatroomName + "\n");
-    			thatClientOut.flush();
-    		}
-    	}
     }
-    
-    public void printJoinMessage() {
-    	
-    	//Checks if chatroom name already exists, sets roomref accordingly
-    	for(ClientThread thatClient : server.getClients()){
-    		int thatClientRoomRef = thatClient.getRoomRef();
-    		String thatClientRoomName = thatClient.getChatroomName();
-    		if(thatClientRoomName.equals(this.chatroomName)){
-    			this.roomRef = thatClientRoomRef;
-    		}else {
-    			this.roomRef = random.nextInt(999);
-    		}
-        }
-    	
-    	clientOut.println("JOINED_CHATROOM: " + chatroomName);
-    	clientOut.println("SERVER_IP: " + this.server.getServerIP());
-    	clientOut.println("PORT: " + this.server.getPortNumber());
-    	clientOut.println("ROOM_REF: " + this.roomRef);
-    	clientOut.println("JOIN_ID: " + this.joinID + "\n");
-    }
-    
-    private static String msgLine1 = "CHAT:";
-    private static String msgLine2 = "JOIN_ID:";
-    private static String msgLine3 = "CLIENT_NAME:";
-    private static String msgLine4 = "MESSAGE:";
 
     public void getChatMessage() throws IOException{
 	 	
@@ -327,6 +304,7 @@ public class ClientThread implements Runnable {
     			this.input = this.br.readLine();
     		}
     		
+    		//Get first line (CHAT: [room ref], else return error
     		if (input.regionMatches(0, msgLine1, 0, 5)){
     			String inputRoomRefString = this.input.substring(6);
     			try{
@@ -340,7 +318,7 @@ public class ClientThread implements Runnable {
     				}
     			}catch (Exception e){ 
     				System.err.println("ERROR: Couldn't parse int \"" + inputRoomRefString + "\"");
-    				this.clientOut.println("ERROR: Couldn't parse int" + inputRoomRefString + "\"");
+    				this.clientOut.println("ERROR: Couldn't parse int \"" + inputRoomRefString + "\"");
     				this.input = this.br.readLine();
     			}
     		}else{
@@ -378,8 +356,8 @@ public class ClientThread implements Runnable {
     					this.clientOut.println("ERROR: JoinID number incorrect: \"" + inputJoinID + "\" should be: " + this.joinID );
     				}
     			}catch (Exception e){ 
-    				System.err.println("ERROR: Couldn't parse int\"" + inputJoinIDString + "\"");
-    				this.clientOut.println("ERROR: Couldn't parse int\"" + inputJoinIDString + "\"");
+    				System.err.println("ERROR: Couldn't parse int \"" + inputJoinIDString + "\"");
+    				this.clientOut.println("ERROR: Couldn't parse int \"" + inputJoinIDString + "\"");
     			}
     		}else{
     			System.err.println("ERROR: Line incorrect: \"" + this.input + "\"");
@@ -448,6 +426,157 @@ public class ClientThread implements Runnable {
    		}
    	}
     
+	@SuppressWarnings("null")
+	public void getFinalMessage() throws IOException{
+    	
+    	int inputRoomRef, inputJoinID;
+    	
+    	//Check name from client, reject incorrect format
+    	while(true){
+    		
+    		//Respond to kill_service
+    		if (this.input.regionMatches(0, killService, 0, 12)) {
+    			System.exit(1);
+    		}
+    		
+    		//Respond to HELO text
+    		if (this.input.regionMatches(0, HELOtext, 0, 9)) {
+    			printHeloText();
+    			this.input = this.br.readLine();
+    		}
+    		
+    		//If leave message correctly formatted, continue to next line else return error
+    		if (input.regionMatches(0, finalLine1, 0, 15)){
+    			String inputRoomRefString = this.input.substring(16);
+    			try{
+    				inputRoomRef = Integer.parseInt(inputRoomRefString);
+    				if (inputRoomRef == this.roomRef) {
+    					break;
+    				}else {
+    					System.err.println("ERROR: Room reference number incorrect: \"" + inputRoomRef + "\" should be: " + this.roomRef );
+    					this.clientOut.println("ERROR: Room reference number incorrect: \"" + inputRoomRef + "\" should be: " + this.roomRef );
+    					this.input = this.br.readLine();
+    				}
+    			}catch (Exception e){ 
+    				System.err.println("ERROR: Couldn't parse int \"" + inputRoomRefString + "\"");
+    				this.clientOut.println("ERROR: Couldn't parse int \"" + inputRoomRefString + "\"");
+    				this.input = this.br.readLine();
+    			}
+    		}else{
+    			System.err.println("ERROR: Line incorrect: \"" + this.input + "\"");
+    			this.clientOut.println("ERROR: Line incorrect: \"" + this.input + "\"");
+    			this.input = this.br.readLine();
+    		}
+    	}
+    	
+    	//Get second line of message, reject if wrong format
+    	this.clientOut.println("Enter Second Line (JOIN_ID: [JOIN_ID])");
+    	while(true){
+    		System.out.println("Enter Second Line (JOIN_ID: [JOIN_ID])");
+        	this.input = this.br.readLine();
+    		
+    		//Respond to kill_service
+    		if (this.input.regionMatches(0, killService, 0, 12)) {
+    			System.exit(1);
+    		}
+    		
+    		//Respond to HELO text
+    		if (this.input.regionMatches(0, HELOtext, 0, 9)) {
+    			printHeloText();
+    			this.input = this.br.readLine();
+    		}
+
+    		if (input.regionMatches(0, msgLine2, 0, 8)){
+    			String inputJoinIDString = this.input.substring(9);
+    			try{
+    				inputJoinID= Integer.parseInt(inputJoinIDString);
+    				if (inputJoinID == this.joinID) {
+    					this.roomRef = (Integer) null;
+    					this.chatroomName = null;
+    					break;
+    				}else {
+    					System.err.println("ERROR: JoinID number incorrect: \"" + inputJoinID + "\" should be: " + this.joinID );
+    					this.clientOut.println("ERROR: JoinID number incorrect: \"" + inputJoinID + "\" should be: " + this.joinID );
+    				}
+    			}catch (Exception e){ 
+    				System.err.println("ERROR: Couldn't parse int \"" + inputJoinIDString + "\"");
+    				this.clientOut.println("ERROR: Couldn't parse int \"" + inputJoinIDString + "\"");
+    			}
+    		}else{
+    			System.err.println("ERROR: Line incorrect: \"" + this.input + "\"");
+    			this.clientOut.println("ERROR: Line incorrect: \"" + this.input + "\"");
+    		}
+		}
+
+    	
+    	//Prints join message to client
+    	printLeaveMessage();
+    	
+    	//Prints join message to other clients in server
+    	for(ClientThread thatClient : server.getClients()){
+    		PrintWriter thatClientOut = thatClient.getWriter();
+    		if(thatClientOut != null && thatClient.roomRef == this.roomRef){
+    			thatClientOut.println(this.clientName + " has left chatroom " + this.chatroomName + "\n");
+    			thatClientOut.flush();
+    		}
+    	}
+    }
+    
+    public void printJoinMessage() {
+    	for(ClientThread thatClient : server.getClients()){
+    		PrintWriter thatClientOut = thatClient.getWriter();
+    		
+    		int thatClientRoomRef = thatClient.getRoomRef();
+    		String thatClientRoomName = thatClient.getChatroomName();
+    		
+    		//Checks if chatroom name already exists, sets roomref accordingly
+    		if(thatClientRoomName.equals(this.chatroomName)){
+    			this.roomRef = thatClientRoomRef;
+    		}else {
+    			this.roomRef = random.nextInt(999);
+    		}
+    		
+    		//Print join message to chatroom clients
+       		if(thatClientOut != null && thatClient.roomRef == this.roomRef  && thatClient.joinID != this.joinID){
+    			thatClientOut.println(this.clientName + " has joined chatroom " + this.chatroomName + "\n");
+    			thatClientOut.flush();
+    		}
+    		
+        }
+    	
+    	//Needed to print messages to this screen, default message doesn't appear otherwise (not sure why) 
+    	for(ClientThread thatClient : server.getClients()){
+    		PrintWriter thatClientOut = thatClient.getWriter();
+    		if(thatClientOut != null && thatClient.roomRef == this.roomRef  && thatClient.joinID == this.joinID){
+    			thatClientOut.println("JOINED_CHATROOM: " + chatroomName);
+    			thatClientOut.println("SERVER_IP: " + this.server.getServerIP());
+    	    	thatClientOut.println("PORT: " + this.server.getPortNumber());
+    	    	thatClientOut.println("ROOM_REF: " + this.roomRef);
+    	    	thatClientOut.println("JOIN_ID: " + this.joinID + "\n");
+    			thatClientOut.flush();
+    		}
+    	}
+    }
+    
+    public void printLeaveMessage() {
+    	
+    	//Checks if chatroom name already exists, sets roomref accordingly
+    	for(ClientThread thatClient : server.getClients()){
+    		PrintWriter thatClientOut = thatClient.getWriter();
+    		
+    		//Print left message to chatroom clients
+       		if(thatClientOut != null && thatClient.roomRef == this.roomRef){
+    			thatClientOut.println(this.clientName + " has left chatroom " + this.chatroomName + "\n");
+    			thatClientOut.flush();
+    		}
+        }
+    	
+    	//Print Left message to client
+    	this.clientOut.println("LEFT CHATROOM: " + this.roomRef);
+    	this.clientOut.println("JOIN_ID: " + this.joinID);
+    }
+    
+    
     public void printHeloText() {
     	this.clientOut.println("HELO text\nIP:" + this.clientIP +"\nPort:" + this.portNumber + "\nStudentID:" + 13325757 + "\n");
 		System.out.println("HELO text\nIP:" + this.clientIP +"\nPort:" + this.portNumber + "\nStudentID:" + 13325757 + "\n");
@@ -456,9 +585,10 @@ public class ClientThread implements Runnable {
     
     public void printMessage() {
     	for(ClientThread thatClient : server.getClients()){
-    		PrintWriter thatClientOut = thatClient.getWriter();
-    		if(thatClientOut != null){
-    			//thatClientOut.println("\n");
+    		PrintWriter thatClientOut = thatClient.getWriter();	
+    		int thatClientRoomRef = thatClient.getRoomRef();
+    		
+    		if(thatClientOut != null && thatClientRoomRef == this.roomRef  && thatClient.joinID != this.joinID){
     			thatClientOut.println("CHAT:" + this.roomRef);
     			thatClientOut.println("CLIENT_NAME:" + this.clientName);
     			thatClientOut.println("MESSAGE:" + this.msg);
